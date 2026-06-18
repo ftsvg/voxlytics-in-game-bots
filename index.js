@@ -5,7 +5,8 @@ import { WatchLobby } from './utils/lobbyChat.js'
 import { startNickExpiry } from './denicker/nickExpiry.js'
 
 const BOTS = [
-    { username: 'notafveey', lobby: 1 }
+    { username: process.env.BOT_1, lobby: 1 },
+    { username: process.env.BOT_2, lobby: 2 }
 ]
 
 const RECONNECT_DELAY = 5000

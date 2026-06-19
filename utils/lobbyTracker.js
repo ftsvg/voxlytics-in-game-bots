@@ -1,5 +1,6 @@
 import axios from 'axios'
 import 'dotenv/config'
+import { reverseMap } from '../denicker/identityStore.js'
 
 const webhookUrl = process.env.WEBHOOK_TRACKER
 
@@ -132,30 +133,46 @@ function getMostPlayedMode(gameStats) {
   return { key: topMode, wins: topWins }
 }
 
-async function sendTrackerMessage(username, uuid, lobby, action) {
+function parseRole(displayName) {
+  const text = displayName?.toString() ?? ''
+  const matches = [...text.matchAll(/\[([^\]]+)\]/g)].map(m => m[1])
+  return matches.find(m => isNaN(parseInt(m))) ?? null
+}
+
+async function sendTrackerMessage(username, uuid, lobby, action, displayName) {
   if (!webhookUrl) return
 
   const data = await fetchPlayerData(uuid)
 
-  const level = data?.overall?.level ?? 0
+  if (!data) return
+
+  const level = data.overall?.level ?? 0
+  const weightedWins = parseInt(data.overall?.weightedwins ?? 0)
+
+  if (level < 100 && weightedWins < 2500) return
+
   const star = level >= 1100 ? '✪' : '✫'
-  const levelStr = `[${level}${star}]`
+  const role = parseRole(displayName)
+  const roleStr = role ? ` [${role}]` : ''
+
+  const originalIGN = reverseMap.get(username)
+  const displayedName = originalIGN ?? username
+  const nickSuffix = originalIGN ? ` (nicked as ${username})` : ''
+
+  const tag = `[${level}${star}]${roleStr} ${displayedName}${nickSuffix}`
 
   const mostPlayed = getMostPlayedMode(data?.game)
   const mostPlayedStr = mostPlayed
     ? `\`${MODE_NAMES[mostPlayed.key] ?? mostPlayed.key} | ${mostPlayed.wins.toLocaleString()} Wins\``
     : '`Unknown`'
 
-  const weightedWins = data?.overall?.weightedwins ?? null
-  const winsStr = weightedWins !== null
-    ? `**Overall Wins:** \`${parseInt(weightedWins).toLocaleString()}\``
-    : ''
+  const winsStr = `**Overall Wins:** \`${weightedWins.toLocaleString()}\``
 
   let msg
   if (action === 'join') {
-    msg = `> 🟢 \`${levelStr} ${username}\` has been spotted in **Lobby ${lobby}!** Most played mode ${mostPlayedStr} ${winsStr}`.trim()
+    msg = `> 🟢 \`${tag}\` has been spotted in **Lobby ${lobby}!** Most played mode ${mostPlayedStr} ${winsStr}`.trim()
   } else {
-    msg = `> 🔴 \`${levelStr} ${username}\` has left Lobby **${lobby}!** Most played mode ${mostPlayedStr} ${winsStr}`.trim()
+    msg = `> 🔴 \`${tag}\` has left Lobby **${lobby}!** Most played mode ${mostPlayedStr} ${winsStr}`.trim()
   }
 
   try {
@@ -181,12 +198,12 @@ export function startLobbyTracker(bot, lobby) {
       fetchPlayerData(player.uuid).catch(() => {})
       return
     }
-    await sendTrackerMessage(player.username, player.uuid, lobby, 'join')
+    await sendTrackerMessage(player.username, player.uuid, lobby, 'join', player.displayName)
   })
 
   bot.on('playerLeft', async (player) => {
     if (!ready) return
     if (player.username.includes('npc-')) return
-    await sendTrackerMessage(player.username, player.uuid, lobby, 'leave')
+    await sendTrackerMessage(player.username, player.uuid, lobby, 'leave', player.displayName)
   })
 }

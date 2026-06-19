@@ -165,11 +165,22 @@ async function sendTrackerMessage(username, uuid, lobby, action) {
 
 export function startLobbyTracker(bot, lobby) {
   let ready = false
-  setTimeout(() => { ready = true }, 10000)
+
+  setTimeout(() => {
+    for (const player of Object.values(bot.players)) {
+      if (player.uuid && !player.username.includes('npc-')) {
+        fetchPlayerData(player.uuid).catch(() => {})
+      }
+    }
+    ready = true
+  }, 10000)
 
   bot.on('playerJoined', async (player) => {
-    if (!ready) return
     if (player.username.includes('npc-')) return
+    if (!ready) {
+      fetchPlayerData(player.uuid).catch(() => {})
+      return
+    }
     await sendTrackerMessage(player.username, player.uuid, lobby, 'join')
   })
 

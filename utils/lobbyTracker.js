@@ -1,6 +1,7 @@
 import axios from 'axios'
 import 'dotenv/config'
 import { reverseMap } from '../denicker/identityStore.js'
+import { NICK_ALLOWED_ROLES } from '../denicker/constants.js'
 
 const webhookUrl = process.env.WEBHOOK_TRACKER
 
@@ -136,7 +137,7 @@ function getMostPlayedMode(gameStats) {
 function parseRole(displayName) {
   const text = displayName?.toString() ?? ''
   const matches = [...text.matchAll(/\[([^\]]+)\]/g)].map(m => m[1])
-  return matches.find(m => isNaN(parseInt(m))) ?? null
+  return matches.find(m => NICK_ALLOWED_ROLES.includes(m)) ?? null
 }
 
 async function sendTrackerMessage(username, uuid, lobby, action, displayName) {
@@ -149,7 +150,7 @@ async function sendTrackerMessage(username, uuid, lobby, action, displayName) {
   const level = data.overall?.level ?? 0
   const weightedWins = parseInt(data.overall?.weightedwins ?? 0)
 
-  if (level < 100 && weightedWins < 2500) return
+  if (level < 75 && weightedWins < 2000) return
 
   const star = level >= 1100 ? '✪' : '✫'
   const role = parseRole(displayName)

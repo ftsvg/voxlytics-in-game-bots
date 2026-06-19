@@ -135,9 +135,9 @@ async function sendTrackerMessage(username, uuid, lobby, action) {
 
   let msg
   if (action === 'join') {
-    msg = `\`${levelStr} ${username}\` has been spotted in **Lobby ${lobby}!** Most played mode ${mostPlayedStr} ${winsStr}`.trim()
+    msg = `> 🟢 \`${levelStr} ${username}\` has been spotted in **Lobby ${lobby}!** Most played mode ${mostPlayedStr} ${winsStr}`.trim()
   } else {
-    msg = `\`${levelStr} ${username}\` has left Lobby ${lobby}! Most played mode ${mostPlayedStr} ${winsStr}`.trim()
+    msg = `> 🔴 \`${levelStr} ${username}\` has left Lobby **${lobby}!** Most played mode ${mostPlayedStr} ${winsStr}`.trim()
   }
 
   try {
@@ -146,12 +146,17 @@ async function sendTrackerMessage(username, uuid, lobby, action) {
 }
 
 export function startLobbyTracker(bot, lobby) {
+  let ready = false
+  setTimeout(() => { ready = true }, 10000)
+
   bot.on('playerJoined', async (player) => {
+    if (!ready) return
     if (player.username.includes('npc-')) return
     await sendTrackerMessage(player.username, player.uuid, lobby, 'join')
   })
 
   bot.on('playerLeft', async (player) => {
+    if (!ready) return
     if (player.username.includes('npc-')) return
     await sendTrackerMessage(player.username, player.uuid, lobby, 'leave')
   })

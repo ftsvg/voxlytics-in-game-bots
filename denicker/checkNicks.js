@@ -1,5 +1,6 @@
 import { sendWebhook } from './sendWebhook.js'
 import { COLORS, MIN_NICK_DELAY, MAX_NICK_DELAY } from './constants.js'
+import { suppressUsername } from './nickSuppression.js'
 import {
   getOriginalIGN,
   nickPlayer,
@@ -82,6 +83,11 @@ export async function checkNicks(bot) {
     // still be matched later. If canNick is false (wrong role), we consume it.
     lockEvent(lobby, index)
 
+    // Suppress tracker messages for both usernames immediately —
+    // we don't know if canNick passes yet but we know a swap is happening
+    suppressUsername(left)
+    suppressUsername(joined)
+
     const originalIGN = getOriginalIGN(left)
     const role = await getPlayerRole(originalIGN)
 
@@ -116,6 +122,9 @@ export async function checkNicks(bot) {
     const joined = event.username
 
     lockEvent(lobby, index)
+
+    suppressUsername(left)
+    suppressUsername(joined)
 
     const originalIGN = getOriginalIGN(left)
     const role = await getPlayerRole(originalIGN)

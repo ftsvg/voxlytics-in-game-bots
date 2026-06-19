@@ -2,6 +2,7 @@ import axios from 'axios'
 import 'dotenv/config'
 import { reverseMap } from '../denicker/identityStore.js'
 import { NICK_ALLOWED_ROLES } from '../denicker/constants.js'
+import { isSuppressed } from '../denicker/nickSuppression.js'
 
 const webhookUrl = process.env.WEBHOOK_TRACKER
 
@@ -199,12 +200,14 @@ export function startLobbyTracker(bot, lobby) {
       fetchPlayerData(player.uuid).catch(() => {})
       return
     }
+    if (isSuppressed(player.username)) return
     await sendTrackerMessage(player.username, player.uuid, lobby, 'join', player.displayName)
   })
 
   bot.on('playerLeft', async (player) => {
     if (!ready) return
     if (player.username.includes('npc-')) return
+    if (isSuppressed(player.username)) return
     await sendTrackerMessage(player.username, player.uuid, lobby, 'leave', player.displayName)
   })
 }

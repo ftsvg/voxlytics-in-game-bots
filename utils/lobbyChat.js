@@ -2,7 +2,9 @@ import { sendLobbyMessage } from "./sendLobbyMessage.js"
 
 export async function WatchLobby(bot, lobby) {
     bot.on('messagestr', async (message) => {
-        if (lobby !== 1) return
+        if (![1, 2].includes(lobby)) return
+
+        const channel = lobby === 2 ? 'chat_2' : 'chat_1'
 
         const msg = message.trim()
 
@@ -16,7 +18,10 @@ export async function WatchLobby(bot, lobby) {
         if (msg.startsWith('(!)')) return
 
         if (msg.includes('has joined!') || msg.includes('has left!')) {
-            await sendLobbyMessage({ content: msg })
+            await sendLobbyMessage({
+                content: msg,
+                channel
+            })
             return
         }
 
@@ -39,7 +44,8 @@ export async function WatchLobby(bot, lobby) {
         await sendLobbyMessage({
             content,
             title,
-            username: player
+            username: player,
+            channel
         })
     })
 }

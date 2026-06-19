@@ -5,7 +5,7 @@ const webhookUrl = process.env.WEBHOOK_TRACKER
 
 const MODE_NAMES = {
   // Solo Duels
-  bridges5ingle: 'Bed Bridge Fight 1v1',
+  bridgesSingle: 'Bed Bridge Fight 1v1',
   obstacleSingle: 'Obstacles',
   resourceOldSingle: 'Resource Collect Old 1v1',
   voidSingle: 'Void Fight 1v1',
@@ -53,10 +53,14 @@ const MODE_NAMES = {
   clutchMastersSolo: 'Clutch Masters Solo',
 }
 
+// Cache successful results for 5 minutes, failed for 2 minutes
 const statsCache = new Map()
+const CACHE_TTL = 5 * 60 * 1000
+const FAIL_TTL = 2 * 60 * 1000
 
+// Serial queue with gap between requests to avoid bursting the API
 let apiQueue = Promise.resolve()
-const API_DELAY = 600
+const API_DELAY = 800
 
 function enqueue(fn) {
   const result = apiQueue.then(fn)
@@ -64,35 +68,49 @@ function enqueue(fn) {
   return result
 }
 
+async function fetchWithRetry(url, retries = 3) {
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      const res = await fetch(url)
+      if (res.status === 429) {
+        const wait = 1000 * 2 ** attempt
+        await new Promise(r => setTimeout(r, wait))
+        continue
+      }
+      if (!res.ok) return null
+      return await res.json()
+    } catch {
+      if (attempt === retries - 1) return null
+      await new Promise(r => setTimeout(r, 1000 * 2 ** attempt))
+    }
+  }
+  return null
+}
+
 async function fetchPlayerData(uuid) {
-  if (statsCache.has(uuid)) {
-    const cached = statsCache.get(uuid)
-    if (Date.now() - cached.time < 300000) return cached.data
+  const cached = statsCache.get(uuid)
+  if (cached) {
+    const ttl = cached.data ? CACHE_TTL : FAIL_TTL
+    if (Date.now() - cached.time < ttl) return cached.data
   }
 
   return enqueue(async () => {
-    if (statsCache.has(uuid)) {
-      const cached = statsCache.get(uuid)
-      if (Date.now() - cached.time < 300000) return cached.data
+    // Re-check after waiting in queue
+    const cached = statsCache.get(uuid)
+    if (cached) {
+      const ttl = cached.data ? CACHE_TTL : FAIL_TTL
+      if (Date.now() - cached.time < ttl) return cached.data
     }
 
-    try {
-      const [overallRes, gameRes] = await Promise.all([
-        fetch(`https://api.voxyl.net/player/stats/overall/${uuid}?api=${process.env.API_KEY}`),
-        fetch(`https://api.voxyl.net/player/stats/game/${uuid}?api=${process.env.API_KEY}`)
-      ])
+    const key = process.env.API_KEY
+    const [overall, game] = await Promise.all([
+      fetchWithRetry(`https://api.voxyl.net/player/stats/overall/${uuid}?api=${key}`),
+      fetchWithRetry(`https://api.voxyl.net/player/stats/game/${uuid}?api=${key}`)
+    ])
 
-      if (!overallRes.ok || !gameRes.ok) return null
-
-      const overall = await overallRes.json()
-      const game = await gameRes.json()
-
-      const data = { overall, game }
-      statsCache.set(uuid, { data, time: Date.now() })
-      return data
-    } catch {
-      return null
-    }
+    const data = overall && game ? { overall, game } : null
+    statsCache.set(uuid, { data, time: Date.now() })
+    return data
   })
 }
 

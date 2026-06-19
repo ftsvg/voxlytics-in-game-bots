@@ -55,29 +55,45 @@ const MODE_NAMES = {
 
 const statsCache = new Map()
 
+let apiQueue = Promise.resolve()
+const API_DELAY = 600
+
+function enqueue(fn) {
+  const result = apiQueue.then(fn)
+  apiQueue = result.catch(() => {}).then(() => new Promise(r => setTimeout(r, API_DELAY)))
+  return result
+}
+
 async function fetchPlayerData(uuid) {
   if (statsCache.has(uuid)) {
     const cached = statsCache.get(uuid)
     if (Date.now() - cached.time < 300000) return cached.data
   }
 
-  try {
-    const [overallRes, gameRes] = await Promise.all([
-      fetch(`https://api.voxyl.net/player/stats/overall/${uuid}?api=${process.env.API_KEY}`),
-      fetch(`https://api.voxyl.net/player/stats/game/${uuid}?api=${process.env.API_KEY}`)
-    ])
+  return enqueue(async () => {
+    if (statsCache.has(uuid)) {
+      const cached = statsCache.get(uuid)
+      if (Date.now() - cached.time < 300000) return cached.data
+    }
 
-    if (!overallRes.ok || !gameRes.ok) return null
+    try {
+      const [overallRes, gameRes] = await Promise.all([
+        fetch(`https://api.voxyl.net/player/stats/overall/${uuid}?api=${process.env.API_KEY}`),
+        fetch(`https://api.voxyl.net/player/stats/game/${uuid}?api=${process.env.API_KEY}`)
+      ])
 
-    const overall = await overallRes.json()
-    const game = await gameRes.json()
+      if (!overallRes.ok || !gameRes.ok) return null
 
-    const data = { overall, game }
-    statsCache.set(uuid, { data, time: Date.now() })
-    return data
-  } catch {
-    return null
-  }
+      const overall = await overallRes.json()
+      const game = await gameRes.json()
+
+      const data = { overall, game }
+      statsCache.set(uuid, { data, time: Date.now() })
+      return data
+    } catch {
+      return null
+    }
+  })
 }
 
 function getMostPlayedMode(gameStats) {
@@ -119,7 +135,7 @@ async function sendTrackerMessage(username, uuid, lobby, action) {
 
   let msg
   if (action === 'join') {
-    msg = `\`${levelStr} ${username}\` has been spotted in Lobby ${lobby}! Most played mode ${mostPlayedStr} ${winsStr}`.trim()
+    msg = `\`${levelStr} ${username}\` has been spotted in **Lobby ${lobby}!** Most played mode ${mostPlayedStr} ${winsStr}`.trim()
   } else {
     msg = `\`${levelStr} ${username}\` has left Lobby ${lobby}! Most played mode ${mostPlayedStr} ${winsStr}`.trim()
   }

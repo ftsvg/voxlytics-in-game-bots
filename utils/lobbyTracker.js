@@ -63,11 +63,10 @@ const FAIL_TTL = 2 * 60 * 1000
 
 // Serial queue with gap between requests to avoid bursting the API
 let apiQueue = Promise.resolve()
-const API_DELAY = 800
 
 function enqueue(fn) {
   const result = apiQueue.then(fn)
-  apiQueue = result.catch(() => {}).then(() => new Promise(r => setTimeout(r, API_DELAY)))
+  apiQueue = result.catch(() => {})
   return result
 }
 

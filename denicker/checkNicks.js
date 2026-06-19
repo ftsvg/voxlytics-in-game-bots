@@ -78,16 +78,12 @@ export async function checkNicks(bot) {
     const { event, index } = match
     const left = event.username
 
-    // Lock the event before async work to prevent another handler claiming it.
-    // If the role check returns null (API error), we unlock so the event can
-    // still be matched later. If canNick is false (wrong role), we consume it.
     lockEvent(lobby, index)
 
     const originalIGN = getOriginalIGN(left)
     const role = await getPlayerRole(originalIGN)
 
     if (role === null) {
-      // API failure — release the lock and bail without consuming the event
       unlockEvent(lobby, index)
       return
     }

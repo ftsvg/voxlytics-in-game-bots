@@ -13,13 +13,11 @@ export async function isFakeNick(uuid) {
       `https://api.voxyl.net/player/stats/overall/${uuid}?api=${process.env.API_KEY}`
     )
 
-    // Only treat 404 as definitively fake — server errors could be transient
     if (!res.ok) {
       if (res.status === 404) {
         statsCache.set(uuid, { fake: true, time: Date.now() })
         return true
       }
-      // API is down or erroring — don't cache, assume real to avoid missing nicks
       return false
     }
 
@@ -33,7 +31,6 @@ export async function isFakeNick(uuid) {
     statsCache.set(uuid, { fake: false, time: Date.now() })
     return false
   } catch {
-    // Network error — don't cache, assume real to avoid missing nicks
     return false
   }
 }

@@ -1,6 +1,6 @@
-export const EVENT_HISTORY_TIME = 15000
+export const EVENT_HISTORY_TIME = 50
 export const MIN_NICK_DELAY = 0
-export const MAX_NICK_DELAY = 8000
+export const MAX_NICK_DELAY = 5
 
 export const COLORS = {
     UNNICK: 0xFF5555,

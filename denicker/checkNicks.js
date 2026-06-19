@@ -83,11 +83,6 @@ export async function checkNicks(bot) {
     // still be matched later. If canNick is false (wrong role), we consume it.
     lockEvent(lobby, index)
 
-    // Suppress tracker messages for both usernames immediately —
-    // we don't know if canNick passes yet but we know a swap is happening
-    suppressUsername(left)
-    suppressUsername(joined)
-
     const originalIGN = getOriginalIGN(left)
     const role = await getPlayerRole(originalIGN)
 
@@ -101,6 +96,8 @@ export async function checkNicks(bot) {
 
     if (!canNick(role)) return
 
+    suppressUsername(left)
+    suppressUsername(joined)
     await handlePair(lobby, left, joined)
   })
 
@@ -123,9 +120,6 @@ export async function checkNicks(bot) {
 
     lockEvent(lobby, index)
 
-    suppressUsername(left)
-    suppressUsername(joined)
-
     const originalIGN = getOriginalIGN(left)
     const role = await getPlayerRole(originalIGN)
 
@@ -138,6 +132,8 @@ export async function checkNicks(bot) {
 
     if (!canNick(role)) return
 
+    suppressUsername(left)
+    suppressUsername(joined)
     await handlePair(lobby, left, joined)
   })
 }

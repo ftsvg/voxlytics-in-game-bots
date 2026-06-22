@@ -26,7 +26,8 @@ export async function WatchLobby(bot, lobby) {
             return
         }
 
-        const denickMatch = msg.match(/^From (.+?):\s*\?denick\s+(\S+)$/i)
+        if (msg.startsWith('From ') && msg.includes('?denick')) console.log('[denick debug]', JSON.stringify(msg))
+        const denickMatch = msg.match(/^From (.+?):\s*\?denick\s+(\S+)/i)
         if (denickMatch) {
             const queried = denickMatch[2]
             const original = reverseMap.get(queried)

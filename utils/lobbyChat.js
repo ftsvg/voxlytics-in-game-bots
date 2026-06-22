@@ -26,15 +26,15 @@ export async function WatchLobby(bot, lobby) {
             return
         }
 
-        if (msg.startsWith('From ') && msg.includes('?denick')) console.log('[denick debug]', JSON.stringify(msg))
-        const denickMatch = msg.match(/^From (.+?):\s*\?denick\s+(\S+)/i)
+        const denickMatch = msg.match(/^From (?:.+\s)?(\S+):\s*\?denick\s+(\S+)/i)
         if (denickMatch) {
+            const sender = denickMatch[1]
             const queried = denickMatch[2]
             const original = reverseMap.get(queried)
             const reply = original
                 ? `${original} is nicked as ${queried}`
                 : `No nick found for ${queried}`
-            bot.chat(`/msg ${denickMatch[1]} ${reply}`)
+            bot.chat(`/msg ${sender} ${reply}`)
             return
         }
 

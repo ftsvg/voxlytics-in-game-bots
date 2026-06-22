@@ -45,6 +45,6 @@ export function markMatched(lobby, index) {
     lockedKeys.delete(`${lobby}:${index}`)
 }
 
-export function pushEvent(lobby, type, username, time) {
-    getEvents(lobby).push({ type, username, time, matched: false })
+export function pushEvent(lobby, type, username, time, ping = null) {
+    getEvents(lobby).push({ type, username, time, ping, matched: false })
 }

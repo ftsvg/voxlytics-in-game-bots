@@ -27,10 +27,7 @@ async function getPing(bot, username) {
   return bot.players[username]?.ping ?? null
 }
 
-function pingField(leavePing, joinPing) {
-  if (leavePing == null || joinPing == null) return []
-  return [{ name: 'Ping', value: `\`${leavePing}ms → ${joinPing}ms\``, inline: true }]
-}
+const ms = ping => ping != null ? `${ping}ms` : '?ms'
 
 async function handlePair(bot, lobby, left, joined, leavePing) {
   const originalIGN = getOriginalIGN(left)
@@ -41,10 +38,9 @@ async function handlePair(bot, lobby, left, joined, leavePing) {
   const isRenick = hasNick(originalIGN)
 
   const joinPing = await getPing(bot, joined)
-  const freshLeavePing = isRenick ? leavePing : leavePing
 
-  if (freshLeavePing != null && joinPing != null && Math.abs(freshLeavePing - joinPing) > PING_TOLERANCE) {
-    console.log(`[denicker] ping mismatch: ${left}=${freshLeavePing}ms vs ${joined}=${joinPing}ms — skipping`)
+  if (leavePing != null && joinPing != null && Math.abs(leavePing - joinPing) > PING_TOLERANCE) {
+    console.log(`[denicker] ping mismatch: ${left}=${leavePing}ms vs ${joined}=${joinPing}ms — skipping`)
     return
   }
 
@@ -52,9 +48,8 @@ async function handlePair(bot, lobby, left, joined, leavePing) {
     if (hasNick(originalIGN)) {
       unnickPlayer(originalIGN, left)
       sendWebhook('Unnick', 'A new unnick has been detected.', COLORS.UNNICK, [
-        { name: 'Nick', value: `\`${left}\``, inline: true },
-        { name: 'Player', value: `\`${originalIGN}\``, inline: true },
-        ...pingField(freshLeavePing, joinPing)
+        { name: 'Nick', value: `\`${left} (${ms(leavePing)})\``, inline: true },
+        { name: 'Player', value: `\`${originalIGN} (${ms(joinPing)})\``, inline: true },
       ])
     }
     touchNick(originalIGN)
@@ -66,16 +61,14 @@ async function handlePair(bot, lobby, left, joined, leavePing) {
     renickPlayer(originalIGN, left, joined)
     sendWebhook('Renick', 'A new renick has been detected.', COLORS.RENICK, [
       { name: 'Player', value: `\`${originalIGN}\``, inline: true },
-      { name: 'Old Nick', value: `\`${left}\``, inline: true },
-      { name: 'New Nick', value: `\`${joined}\``, inline: true },
-      { name: 'Ping', value: `\`${left}: ${freshLeavePing ?? '?'}ms | ${joined}: ${joinPing ?? '?'}ms\``, inline: false }
+      { name: 'Old Nick', value: `\`${left} (${ms(leavePing)})\``, inline: true },
+      { name: 'New Nick', value: `\`${joined} (${ms(joinPing)})\``, inline: true },
     ])
   } else {
     nickPlayer(originalIGN, joined)
     sendWebhook('Nick', 'A new nick has been detected.', COLORS.NICK, [
-      { name: 'Player', value: `\`${originalIGN}\``, inline: true },
-      { name: 'Nick', value: `\`${joined}\``, inline: true },
-      { name: 'Ping', value: `\`${originalIGN}: ${freshLeavePing ?? '?'}ms | ${joined}: ${joinPing ?? '?'}ms\``, inline: false }
+      { name: 'Player', value: `\`${originalIGN} (${ms(leavePing)})\``, inline: true },
+      { name: 'Nick', value: `\`${joined} (${ms(joinPing)})\``, inline: true },
     ])
   }
 
@@ -127,7 +120,7 @@ export async function checkNicks(bot) {
     if (player.username.includes('npc-')) return
 
     const left = player.username
-    const leavePing = bot.players[left]?.ping ?? null
+    const leavePing = player.ping ?? null
     const now = Date.now()
 
     cleanOldEvents(lobby, now)

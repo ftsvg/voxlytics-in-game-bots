@@ -1,5 +1,5 @@
 import { sendLobbyMessage } from "./sendLobbyMessage.js"
-import { getOriginalIGN, reverseMap } from "../denicker/identityStore.js"
+import { reverseMap, identityMap } from "../denicker/identityStore.js"
 
 export async function WatchLobby(bot, lobby) {
     bot.on('messagestr', async (message) => {
@@ -30,10 +30,14 @@ export async function WatchLobby(bot, lobby) {
         if (denickMatch) {
             const sender = denickMatch[1]
             const queried = denickMatch[2]
-            const original = reverseMap.get(queried)
+            const queriedLower = queried.toLowerCase()
+            const original = [...reverseMap.entries()].find(([k]) => k.toLowerCase() === queriedLower)?.[1]
+            const nick = [...identityMap.entries()].find(([k]) => k.toLowerCase() === queriedLower)?.[1]?.nick
             const reply = original
-                ? `${original} is nicked as ${queried}`
-                : `No nick found for ${queried}`
+                ? `${queried}'s original IGN is ${original}`
+                : nick
+                    ? `${queried} is currently nicked as ${nick}`
+                    : `No nick found for ${queried}`
             bot.chat(`/msg ${sender} ${reply}`)
             return
         }

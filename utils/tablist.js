@@ -29,17 +29,17 @@ function buildPayload(players, lobby) {
       const namePart = guildMatch ? guildMatch[1] : full
       const guildPart = guildMatch ? guildMatch[2] : ''
       const ping = p.ping != null ? `${p.ping}ms` : ''
-      const codePart = [guildPart, ping].filter(Boolean).join(' ')
-      const suffix = codePart ? ` \`${codePart}\`` : ''
-      return { line: `**${namePart}**${suffix}`, username: p.username }
+      const boldPart = [namePart, guildPart].filter(Boolean).join(' ')
+      const suffix = ping ? ` \`${ping}\`` : ''
+      return { line: `- **${boldPart}**${suffix}`, username: p.username }
     })
     .sort((a, b) => a.username.localeCompare(b.username, undefined, { sensitivity: 'base' }))
     .map(p => p.line)
 
   const count = names.length
   const playerList = names.length > 0
-    ? names.map(n => `> ${n}`).join('\n')
-    : '> No players online.'
+    ? names.join('\n')
+    : '- No players online.'
   const unixNow = Math.floor(Date.now() / 1000)
 
   return {

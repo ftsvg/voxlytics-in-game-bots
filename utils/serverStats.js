@@ -20,6 +20,8 @@ function saveMsgId(lobby, id) {
 
 function readScoreboard(bot) {
   try {
+    console.log('[serverstats] raw scoreboard:', JSON.stringify(bot.scoreboard, null, 2))
+
     const sidebar = Object.values(bot.scoreboard).find(s => s.position === 1)
     if (!sidebar) return null
 
@@ -27,7 +29,6 @@ function readScoreboard(bot) {
       .sort((a, b) => b.value - a.value)
       .map(i => i.displayName?.toString?.() ?? i.name ?? '')
 
-    // Log raw items once so we can verify the format
     console.log('[serverstats] scoreboard items:', items)
 
     // Parse "All: 72" and "Playing: 47" style lines

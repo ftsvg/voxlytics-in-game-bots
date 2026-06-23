@@ -101,10 +101,14 @@ export function startTablist(bot, lobby) {
           body: JSON.stringify(payload)
         })
 
+        const text = await res.text()
         if (res.ok) {
-          const data = await res.json()
+          const data = JSON.parse(text)
           msgId = data.id
           saveMsgId(lobby, msgId)
+          console.log(`[tablist] lobby ${lobby} posted message ${msgId}`)
+        } else {
+          console.error(`[tablist] lobby ${lobby} POST failed ${res.status}:`, text)
         }
       }
     } catch (err) {
@@ -113,7 +117,9 @@ export function startTablist(bot, lobby) {
   }
 
   // Wait for the bot to be settled in the lobby before first send
+  console.log(`[tablist] lobby ${lobby} scheduled, webhook set`)
   setTimeout(() => {
+    console.log(`[tablist] lobby ${lobby} firing first refresh`)
     refresh()
     setInterval(refresh, REFRESH_INTERVAL)
   }, 12000)

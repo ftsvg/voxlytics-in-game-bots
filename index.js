@@ -5,6 +5,7 @@ import { WatchLobby } from './utils/lobbyChat.js'
 import { startNickExpiry } from './denicker/nickExpiry.js'
 import { startLobbyTracker } from './utils/lobbyTracker.js'
 import { startTablist } from './utils/tablist.js'
+import { startServerStats } from './utils/serverStats.js'
 
 const BOTS = [
     { username: process.env.BOT_1, lobby: 1 },
@@ -42,6 +43,7 @@ function startBot(config) {
         checkNicks(bot)
         startLobbyTracker(bot, lobby)
         startTablist(bot, lobby)
+        startServerStats(bot, lobby)
     })
 
     const reconnect = (reason) => {

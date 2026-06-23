@@ -3,67 +3,50 @@ import 'dotenv/config'
 
 const REFRESH_INTERVAL = 15 * 1000
 
-function loadMsgId(lobby) {
+// Scores captured from raw packets: { [itemName]: score }
+const scores = new Map()
+
+function loadMsgId() {
   try {
-    const raw = fs.readFileSync(`./stats_msg.txt`, 'utf8').trim()
+    const raw = fs.readFileSync('./stats_msg.txt', 'utf8').trim()
     return raw || null
   } catch {
     return null
   }
 }
 
-function saveMsgId(lobby, id) {
+function saveMsgId(id) {
   try {
-    fs.writeFileSync(`./stats_msg.txt`, id)
+    fs.writeFileSync('./stats_msg.txt', id)
   } catch {}
 }
 
-function readScoreboard(bot) {
-  try {
-    console.log('[serverstats] raw scoreboard:', JSON.stringify(bot.scoreboard, null, 2))
+function getStats() {
+  let all = null
+  let playing = null
 
-    const sidebar = Object.values(bot.scoreboard).find(s => s.position === 1)
-    if (!sidebar) return null
-
-    const items = Object.values(sidebar.items ?? {})
-      .sort((a, b) => b.value - a.value)
-      .map(i => i.displayName?.toString?.() ?? i.name ?? '')
-
-    console.log('[serverstats] scoreboard items:', items)
-
-    // Parse "All: 72" and "Playing: 47" style lines
-    let all = null
-    let playing = null
-
-    for (const line of items) {
-      const allMatch = line.match(/All[:\s]+(\d+)/i)
-      const playMatch = line.match(/Playing[:\s]+(\d+)/i)
-      if (allMatch) all = parseInt(allMatch[1])
-      if (playMatch) playing = parseInt(playMatch[1])
-    }
-
-    return { all, playing }
-  } catch (err) {
-    console.error('[serverstats] scoreboard read error:', err)
-    return null
+  for (const [name, score] of scores) {
+    if (/^All/.test(name)) all = score
+    else if (/^Playing/.test(name)) playing = score
   }
+
+  return { all, playing }
 }
 
-function buildPayload(bot, lobby) {
-  const stats = readScoreboard(bot)
-  const unixNow = Math.floor(Date.now() / 1000)
+function buildPayload() {
+  const { all, playing } = getStats()
 
-  const fields = stats
+  const fields = (all != null || playing != null)
     ? [
-        { name: 'Online (All)', value: stats.all != null ? `**${stats.all}**` : 'N/A', inline: true },
-        { name: 'Playing', value: stats.playing != null ? `**${stats.playing}**` : 'N/A', inline: true },
+        { name: 'Online (All)', value: all != null ? `**${all}**` : 'N/A', inline: true },
+        { name: 'Playing', value: playing != null ? `**${playing}**` : 'N/A', inline: true },
       ]
     : [{ name: 'Status', value: 'Scoreboard unavailable', inline: false }]
 
   return {
     embeds: [
       {
-        title: `Server Stats`,
+        title: 'Server Stats',
         fields,
         footer: { text: 'Last updated' },
         timestamp: new Date().toISOString(),
@@ -78,14 +61,31 @@ export function startServerStats(bot, lobby) {
 
   const webhookUrl = process.env.WEBHOOK_STATS
   if (!webhookUrl) {
-    console.warn(`[serverstats] No WEBHOOK_STATS set, skipping.`)
+    console.warn('[serverstats] No WEBHOOK_STATS set, skipping.')
     return
   }
 
-  let msgId = loadMsgId(lobby)
+  // Capture score updates from raw packets
+  bot._client.on('update_score', (packet) => {
+    const name = packet.itemName ?? packet.scoreName ?? ''
+    const score = packet.value ?? packet.score ?? null
+    if (score != null) {
+      scores.set(name, score)
+    }
+  })
+
+  // Also handle score resets
+  bot._client.on('remove_entity_effect', () => {})
+  bot._client.on('scoreboard_score', (packet) => {
+    const name = packet.itemName ?? ''
+    const score = packet.value ?? null
+    if (score != null) scores.set(name, score)
+  })
+
+  let msgId = loadMsgId()
 
   async function refresh() {
-    const payload = buildPayload(bot, lobby)
+    const payload = buildPayload()
 
     try {
       if (msgId) {
@@ -96,7 +96,7 @@ export function startServerStats(bot, lobby) {
         })
         if (!res.ok) {
           msgId = null
-          saveMsgId(lobby, '')
+          saveMsgId('')
         }
       }
 
@@ -110,19 +110,19 @@ export function startServerStats(bot, lobby) {
         if (res.ok) {
           const data = JSON.parse(text)
           msgId = data.id
-          saveMsgId(lobby, msgId)
+          saveMsgId(msgId)
           console.log(`[serverstats] posted message ${msgId}`)
         } else {
           console.error(`[serverstats] POST failed ${res.status}:`, text)
         }
       }
     } catch (err) {
-      console.error(`[serverstats] lobby ${lobby} refresh error:`, err)
+      console.error(`[serverstats] refresh error:`, err)
     }
   }
 
   setTimeout(() => {
-    console.log(`[serverstats] firing first refresh`)
+    console.log('[serverstats] firing first refresh, scores:', Object.fromEntries(scores))
     refresh()
     setInterval(refresh, REFRESH_INTERVAL)
   }, 14000)

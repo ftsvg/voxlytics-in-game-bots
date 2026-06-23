@@ -50,7 +50,7 @@ async function handlePair(bot, left, joined, leavePing) {
 
   const joinPing = await getPing(bot, joined)
 
-  if (leavePing != null && joinPing != null && Math.abs(leavePing - joinPing) > PING_TOLERANCE) {
+  if (leavePing != null && leavePing > 0 && joinPing != null && Math.abs(leavePing - joinPing) > PING_TOLERANCE) {
     console.log(`[denicker] ping mismatch: ${left}=${leavePing}ms vs ${joined}=${joinPing}ms — reverting`)
     // Revert identity change
     if (isUnnick) {

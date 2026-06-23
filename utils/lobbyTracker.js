@@ -172,7 +172,7 @@ async function sendTrackerMessage(username, uuid, lobby, action, displayName) {
   if (action === 'join') {
     msg = `🟢 \`${tag}\` has been spotted in **Lobby ${lobby}**!\n> Most played mode: ${mostPlayedStr}\n>  Weighted Wins: **${weightedWins.toLocaleString()}**`
   } else {
-    msg = `🔴 \`${tag}\` has left **Lobby ${lobby}**!\n> Most played mode: ${mostPlayedStr}\n>  Weighted Wins: **${weightedWins.toLocaleString()}**`
+    msg = `🔴 \`${tag}\` has left **Lobby ${lobby}**!\n> Most played mode: ${mostPlayedStr}\n> Weighted Wins: **${weightedWins.toLocaleString()}**`
   }
 
   try {

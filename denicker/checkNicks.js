@@ -94,22 +94,22 @@ export async function checkNicks(bot) {
       return
     }
 
-    const { event, index } = match
+    const { event } = match
     const left = event.username
     const leavePing = event.ping
     console.log(`[denicker] join-side match: ${left} -> ${joined}, delta=${now - event.time}ms`)
 
-    lockEvent(lobby, index)
+    lockEvent(event)
 
     const originalIGN = getOriginalIGN(left)
     const role = await getPlayerRole(originalIGN)
 
     if (role === null) {
-      unlockEvent(lobby, index)
+      unlockEvent(event)
       return
     }
 
-    markMatched(lobby, index)
+    markMatched(event)
 
     if (!canNick(role)) return
 
@@ -134,21 +134,21 @@ export async function checkNicks(bot) {
       return
     }
 
-    const { event, index } = match
+    const { event } = match
     const joined = event.username
     console.log(`[denicker] leave-side match: ${left} -> ${joined}, delta=${now - event.time}ms`)
 
-    lockEvent(lobby, index)
+    lockEvent(event)
 
     const originalIGN = getOriginalIGN(left)
     const role = await getPlayerRole(originalIGN)
 
     if (role === null) {
-      unlockEvent(lobby, index)
+      unlockEvent(event)
       return
     }
 
-    markMatched(lobby, index)
+    markMatched(event)
 
     if (!canNick(role)) return
 

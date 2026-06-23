@@ -15,7 +15,7 @@ const MODE_NAMES = {
   bedwarsLateSingle: 'Bedwars Lategame 1v1',
   stickFightSingle: 'Stick Fight 1v1',
   ladderFightSingle: 'Ladder Fight 1v1',
-  pearFightSingle: 'Pearl Fight 1v1',
+  pearlFightSingle: 'Pearl Fight 1v1',
   sumoDuelsSolo: 'Block Sumo',
   resourceSingle: 'Resource Collect 1v1',
   groundSingle: 'Ground Fight 1v1',
@@ -163,17 +163,16 @@ async function sendTrackerMessage(username, uuid, lobby, action, displayName) {
   const tag = `[${level}${star}]${roleStr} ${displayedName}${nickSuffix}`
 
   const mostPlayed = getMostPlayedMode(data?.game)
-  const mostPlayedStr = mostPlayed
-    ? `\`${MODE_NAMES[mostPlayed.key] ?? mostPlayed.key} | ${mostPlayed.wins.toLocaleString()} Wins\``
-    : '`Unknown`'
-
-  const winsStr = `**Overall Wins:** \`${weightedWins.toLocaleString()}\``
+  const modeName = mostPlayed ? (MODE_NAMES[mostPlayed.key] ?? mostPlayed.key) : null
+  const mostPlayedStr = modeName
+    ? `**${modeName} (${mostPlayed.wins.toLocaleString()} Wins)**`
+    : '**Unknown**'
 
   let msg
   if (action === 'join') {
-    msg = `> 🟢 \`${tag}\` has been spotted in **Lobby ${lobby}!** Most played mode ${mostPlayedStr} ${winsStr}`.trim()
+    msg = `🟢 \`${tag}\` has been spotted in **Lobby ${lobby}**!\n> Most played mode: ${mostPlayedStr}\n>  Weighted Wins: **${weightedWins.toLocaleString()}**`
   } else {
-    msg = `> 🔴 \`${tag}\` has left Lobby **${lobby}!** Most played mode ${mostPlayedStr} ${winsStr}`.trim()
+    msg = `🔴 \`${tag}\` has left **Lobby ${lobby}**!\n> Most played mode: ${mostPlayedStr}\n>  Weighted Wins: **${weightedWins.toLocaleString()}**`
   }
 
   try {

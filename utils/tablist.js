@@ -22,11 +22,7 @@ function saveMsgId(lobby, id) {
 function buildPayload(players, lobby) {
   const names = Object.values(players)
     .filter(p => !p.username.includes('npc-'))
-    .map(p => {
-      // Use displayName if available (preserves rank tags), fallback to username
-      const display = p.displayName?.toString?.() ?? p.username
-      return display
-    })
+    .map(p => p.username)
     .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
 
   const count = names.length
@@ -34,34 +30,13 @@ function buildPayload(players, lobby) {
   const unixNow = Math.floor(Date.now() / 1000)
 
   return {
-    flags: 32768, // IS_COMPONENTS_V2
-    components: [
+    embeds: [
       {
-        type: 17, // Container
-        components: [
-          {
-            type: 10, // Text Display
-            content: `## Server Tab List — Lobby ${lobby} (${count} Players)`
-          },
-          {
-            type: 14, // Separator
-            divider: true,
-            spacing: 1
-          },
-          {
-            type: 10,
-            content: `\`\`\`\n${playerList}\n\`\`\``
-          },
-          {
-            type: 14,
-            divider: true,
-            spacing: 1
-          },
-          {
-            type: 10,
-            content: `-# Last updated: <t:${unixNow}:R>`
-          }
-        ]
+        title: `Server Tab List — Lobby ${lobby} (${count} Players)`,
+        description: `\`\`\`\n${playerList}\n\`\`\``,
+        footer: { text: `Last updated` },
+        timestamp: new Date().toISOString(),
+        color: 0x5865F2
       }
     ]
   }

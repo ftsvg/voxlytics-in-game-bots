@@ -89,6 +89,7 @@ export async function checkNicks(bot) {
     const match = findMatchingEvent(lobby, 'leave', now, MIN_NICK_DELAY, MAX_NICK_DELAY)
 
     if (!match) {
+      console.log(`[denicker] join no-match: ${joined} at ${now}`)
       pushEvent(lobby, 'join', joined, now)
       return
     }
@@ -96,6 +97,7 @@ export async function checkNicks(bot) {
     const { event, index } = match
     const left = event.username
     const leavePing = event.ping
+    console.log(`[denicker] join-side match: ${left} -> ${joined}, delta=${now - event.time}ms`)
 
     lockEvent(lobby, index)
 
@@ -127,12 +129,14 @@ export async function checkNicks(bot) {
     const match = findMatchingEvent(lobby, 'join', now, MIN_NICK_DELAY, MAX_NICK_DELAY)
 
     if (!match) {
+      console.log(`[denicker] leave no-match: ${left} at ${now}`)
       pushEvent(lobby, 'leave', left, now, leavePing)
       return
     }
 
     const { event, index } = match
     const joined = event.username
+    console.log(`[denicker] leave-side match: ${left} -> ${joined}, delta=${now - event.time}ms`)
 
     lockEvent(lobby, index)
 

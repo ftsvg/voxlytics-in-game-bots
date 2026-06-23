@@ -65,17 +65,22 @@ export function startServerStats(bot, lobby) {
     return
   }
 
+  // Log all packets once to find the scoreboard score packet name
+  const _seen = new Set()
+  bot._client.on('packet', (data, meta) => {
+    if (!_seen.has(meta.name) && JSON.stringify(data).toLowerCase().includes('playing')) {
+      console.log(`[serverstats] packet with "playing": ${meta.name}`, JSON.stringify(data).slice(0, 300))
+      _seen.add(meta.name)
+    }
+  })
+
   // Capture score updates from raw packets
   bot._client.on('update_score', (packet) => {
     const name = packet.itemName ?? packet.scoreName ?? ''
     const score = packet.value ?? packet.score ?? null
-    if (score != null) {
-      scores.set(name, score)
-    }
+    if (score != null) scores.set(name, score)
   })
 
-  // Also handle score resets
-  bot._client.on('remove_entity_effect', () => {})
   bot._client.on('scoreboard_score', (packet) => {
     const name = packet.itemName ?? ''
     const score = packet.value ?? null

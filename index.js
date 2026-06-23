@@ -46,7 +46,11 @@ function startBot(config) {
         startServerStats(bot, lobby)
     })
 
+    let reconnecting = false
+
     const reconnect = (reason) => {
+        if (reconnecting) return
+        reconnecting = true
         console.log(`[${username}] disconnected:`, reason)
         setTimeout(() => startBot(config), RECONNECT_DELAY)
     }

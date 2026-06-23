@@ -22,8 +22,13 @@ function saveMsgId(lobby, id) {
 function buildPayload(players, lobby) {
   const names = Object.values(players)
     .filter(p => !p.username.includes('npc-'))
-    .map(p => p.username)
-    .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
+    .map(p => {
+      const display = p.displayName?.toString?.() ?? p.username
+      const ping = p.ping != null ? ` (${p.ping}ms)` : ''
+      return { display, ping, username: p.username }
+    })
+    .sort((a, b) => a.username.localeCompare(b.username, undefined, { sensitivity: 'base' }))
+    .map(p => `${p.display}${p.ping}`)
 
   const count = names.length
   const playerList = names.length > 0 ? names.join('\n') : 'No players online.'

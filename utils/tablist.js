@@ -23,22 +23,30 @@ function buildPayload(players, lobby) {
   const names = Object.values(players)
     .filter(p => !p.username.includes('npc-'))
     .map(p => {
-      const display = p.displayName?.toString?.() ?? p.username
-      const ping = p.ping != null ? ` (${p.ping}ms)` : ''
-      return { display, ping, username: p.username }
+      const full = p.displayName?.toString?.() ?? p.username
+      // Guild tag is the last [...] at the end, e.g. "[Master] Ventros [Shine]"
+      const guildMatch = full.match(/^(.*)\s+(\[[^\]]+\])$/)
+      const namePart = guildMatch ? guildMatch[1] : full
+      const guildPart = guildMatch ? guildMatch[2] : ''
+      const ping = p.ping != null ? `${p.ping}ms` : ''
+      const codePart = [guildPart, ping].filter(Boolean).join(' ')
+      const suffix = codePart ? ` \`${codePart}\`` : ''
+      return { line: `**${namePart}**${suffix}`, username: p.username }
     })
     .sort((a, b) => a.username.localeCompare(b.username, undefined, { sensitivity: 'base' }))
-    .map(p => `${p.display}${p.ping}`)
+    .map(p => p.line)
 
   const count = names.length
-  const playerList = names.length > 0 ? names.join('\n') : 'No players online.'
+  const playerList = names.length > 0
+    ? names.map(n => `> ${n}`).join('\n')
+    : '> No players online.'
   const unixNow = Math.floor(Date.now() / 1000)
 
   return {
     embeds: [
       {
         title: `Server Tab List — Lobby ${lobby} (${count} Players)`,
-        description: `\`\`\`\n${playerList}\n\`\`\``,
+        description: playerList,
         footer: { text: `Last updated` },
         timestamp: new Date().toISOString(),
         color: 0x5865F2

@@ -29,51 +29,80 @@ async function getPing(bot, username) {
 
 const ms = ping => ping != null ? `${ping}ms` : '?ms'
 
-async function handlePair(bot, lobby, left, joined, leavePing) {
+async function handlePair(bot, left, joined, leavePing) {
   const originalIGN = getOriginalIGN(left)
   const role = await getPlayerRole(originalIGN)
 
   if (!canNick(role)) return
 
   const isRenick = hasNick(originalIGN)
+  const isUnnick = joined === originalIGN
+
+  // Update identity immediately so subsequent events resolve correctly
+  // during the async getPing call below.
+  if (isUnnick) {
+    if (hasNick(originalIGN)) unnickPlayer(originalIGN, left)
+  } else if (isRenick) {
+    renickPlayer(originalIGN, left, joined)
+  } else {
+    nickPlayer(originalIGN, joined)
+  }
 
   const joinPing = await getPing(bot, joined)
 
   if (leavePing != null && joinPing != null && Math.abs(leavePing - joinPing) > PING_TOLERANCE) {
-    console.log(`[denicker] ping mismatch: ${left}=${leavePing}ms vs ${joined}=${joinPing}ms — skipping`)
-    return
-  }
-
-  if (joined === originalIGN) {
-    if (hasNick(originalIGN)) {
-      unnickPlayer(originalIGN, left)
-      sendWebhook('Unnick', 'A new unnick has been detected.', COLORS.UNNICK, [
-        { name: 'Nick', value: `\`${left} (${ms(leavePing)})\``, inline: true },
-        { name: 'Player', value: `\`${originalIGN} (${ms(joinPing)})\``, inline: true },
-      ])
+    console.log(`[denicker] ping mismatch: ${left}=${leavePing}ms vs ${joined}=${joinPing}ms — reverting`)
+    // Revert identity change
+    if (isUnnick) {
+      nickPlayer(originalIGN, left)
+    } else if (isRenick) {
+      renickPlayer(originalIGN, joined, left)
+    } else {
+      unnickPlayer(originalIGN, joined)
     }
-    touchNick(originalIGN)
-    await updateNickList()
     return
   }
 
-  if (isRenick) {
-    renickPlayer(originalIGN, left, joined)
+  touchNick(originalIGN)
+  await updateNickList()
+
+  if (isUnnick) {
+    sendWebhook('Unnick', 'A new unnick has been detected.', COLORS.UNNICK, [
+      { name: 'Nick', value: `\`${left} (${ms(leavePing)})\``, inline: true },
+      { name: 'Player', value: `\`${originalIGN} (${ms(joinPing)})\``, inline: true },
+    ])
+  } else if (isRenick) {
     sendWebhook('Renick', 'A new renick has been detected.', COLORS.RENICK, [
       { name: 'Player', value: `\`${originalIGN}\``, inline: true },
       { name: 'Old Nick', value: `\`${left} (${ms(leavePing)})\``, inline: true },
       { name: 'New Nick', value: `\`${joined} (${ms(joinPing)})\``, inline: true },
     ])
   } else {
-    nickPlayer(originalIGN, joined)
     sendWebhook('Nick', 'A new nick has been detected.', COLORS.NICK, [
       { name: 'Player', value: `\`${originalIGN} (${ms(leavePing)})\``, inline: true },
       { name: 'Nick', value: `\`${joined} (${ms(joinPing)})\``, inline: true },
     ])
   }
+}
 
-  touchNick(originalIGN)
-  await updateNickList()
+async function processMatch(bot, event, left, joined, leavePing) {
+  lockEvent(event)
+
+  const originalIGN = getOriginalIGN(left)
+  const role = await getPlayerRole(originalIGN)
+
+  if (role === null) {
+    unlockEvent(event)
+    return
+  }
+
+  markMatched(event)
+
+  if (!canNick(role)) return
+
+  suppressUsername(left)
+  suppressUsername(joined)
+  await handlePair(bot, left, joined, leavePing)
 }
 
 export async function checkNicks(bot) {
@@ -99,23 +128,7 @@ export async function checkNicks(bot) {
     const leavePing = event.ping
     console.log(`[denicker] join-side match: ${left} -> ${joined}, delta=${now - event.time}ms`)
 
-    lockEvent(event)
-
-    const originalIGN = getOriginalIGN(left)
-    const role = await getPlayerRole(originalIGN)
-
-    if (role === null) {
-      unlockEvent(event)
-      return
-    }
-
-    markMatched(event)
-
-    if (!canNick(role)) return
-
-    suppressUsername(left)
-    suppressUsername(joined)
-    await handlePair(bot, lobby, left, joined, leavePing)
+    await processMatch(bot, event, left, joined, leavePing)
   })
 
   bot.on('playerLeft', async (player) => {
@@ -138,22 +151,6 @@ export async function checkNicks(bot) {
     const joined = event.username
     console.log(`[denicker] leave-side match: ${left} -> ${joined}, delta=${now - event.time}ms`)
 
-    lockEvent(event)
-
-    const originalIGN = getOriginalIGN(left)
-    const role = await getPlayerRole(originalIGN)
-
-    if (role === null) {
-      unlockEvent(event)
-      return
-    }
-
-    markMatched(event)
-
-    if (!canNick(role)) return
-
-    suppressUsername(left)
-    suppressUsername(joined)
-    await handlePair(bot, lobby, left, joined, leavePing)
+    await processMatch(bot, event, left, joined, leavePing)
   })
 }

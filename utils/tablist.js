@@ -23,15 +23,8 @@ function buildPayload(players, lobby) {
   const names = Object.values(players)
     .filter(p => !p.username.includes('npc-'))
     .map(p => {
-      const full = p.displayName?.toString?.() ?? p.username
-      // Guild tag is the last [...] at the end, e.g. "[Master] Ventros [Shine]"
-      const guildMatch = full.match(/^(.*)\s+(\[[^\]]+\])$/)
-      const namePart = guildMatch ? guildMatch[1] : full
-      const guildPart = guildMatch ? guildMatch[2] : ''
-      const ping = p.ping != null ? `${p.ping}ms` : ''
-      const displayPart = [namePart, guildPart].filter(Boolean).join(' ')
-      const suffix = ping ? ` \`${ping}\`` : ''
-      return { line: `-# ${displayPart}${suffix}`, username: p.username }
+      const display = p.displayName?.toString?.() ?? p.username
+      return { line: `- ${display}`, username: p.username }
     })
     .sort((a, b) => a.username.localeCompare(b.username, undefined, { sensitivity: 'base' }))
     .map(p => p.line)
@@ -39,7 +32,7 @@ function buildPayload(players, lobby) {
   const count = names.length
   const playerList = names.length > 0
     ? names.join('\n')
-    : '-# No players online.'
+    : '- No players online.'
   const unixNow = Math.floor(Date.now() / 1000)
 
   return {

@@ -44,6 +44,6 @@ export function markMatched(event) {
     lockedIds.delete(event.id)
 }
 
-export function pushEvent(lobby, type, username, time, ping = null) {
-    getEvents(lobby).push({ id: nextId++, type, username, time, ping, matched: false })
+export function pushEvent(lobby, type, username, time) {
+    getEvents(lobby).push({ id: nextId++, type, username, time, matched: false })
 }

@@ -1,9 +1,6 @@
-export const EVENT_HISTORY_TIME = 500
+export const EVENT_HISTORY_TIME = 50
 export const MIN_NICK_DELAY = 0
-export const MAX_NICK_DELAY = 200
-
-export const PING_CHECK_DELAY = 500
-export const PING_TOLERANCE = 20
+export const MAX_NICK_DELAY = 5
 
 export const COLORS = {
     UNNICK: 0xFF5555,

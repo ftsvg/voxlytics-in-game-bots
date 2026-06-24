@@ -4,7 +4,6 @@ import { checkNicks } from './denicker/checkNicks.js'
 import { WatchLobby } from './utils/lobbyChat.js'
 import { startNickExpiry } from './denicker/nickExpiry.js'
 import { startLobbyTracker } from './utils/lobbyTracker.js'
-import { startTablist } from './utils/tablist.js'
 
 const BOTS = [
     { username: process.env.BOT_1, lobby: 1 },
@@ -41,7 +40,6 @@ function startBot(config) {
         console.log(`[${username}] joined lobby ${lobby}`)
         checkNicks(bot)
         startLobbyTracker(bot, lobby)
-        startTablist(bot, lobby)
     })
 
     const reconnect = (reason) => {
